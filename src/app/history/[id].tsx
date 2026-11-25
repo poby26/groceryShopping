@@ -1,7 +1,8 @@
 /**
  * @file history/[id].tsx
  * @description '장보기 상세' 영수증 화면입니다.
- * 완료된 장보기의 예상 금액·할인 금액·최종 결제금액 요약과 구매 완료/미구매 품목 내역을 표시합니다.
+ * 완료된 장보기 1건의 예상 금액·할인 금액·최종 결제금액 요약 카드와
+ * 구매 완료 품목 / 미구매 품목의 상세 내역을 영수증 형태로 표시합니다.
  */
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -33,12 +34,17 @@ import {
   formatKRW,
 } from '../../utils/format';
 
+/**
+ * 장보기 상세 영수증 화면 컴포넌트
+ */
 export default function HistoryDetailScreen() {
   const flow = useAppFlow();
+  // URL 동적 세그먼트에서 이력 목록 ID 추출
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const list = useGroceryStore((s) => s.lists.find((l) => l.id === id));
 
+  // 존재하지 않거나 삭제된 기록 ID로 진입한 경우 히스토리 복구 화면 표시
   if (!list) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -60,6 +66,7 @@ export default function HistoryDetailScreen() {
     );
   }
 
+  // 영수증 요약 수치 및 실제 구매 완료 품목 수 계산
   const estimatedTotal = getListEstimatedTotal(list);
   const finalPaid = getListFinalPaid(list);
   const finalDiscount = getListFinalDiscount(list);
@@ -67,6 +74,7 @@ export default function HistoryDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* 상단 태스크 헤더 */}
       <AppHeader
         mode="task"
         title="장보기 상세"
@@ -80,7 +88,7 @@ export default function HistoryDetailScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* 영수증 요약 카드 */}
+        {/* 1. 영수증 요약 카드 (장보기명, 완료 일시, 예상/할인/최종 결제금액) */}
         <Card style={styles.receiptCard}>
           <View style={styles.receiptHeader}>
             <View style={styles.receiptTitleWrap}>
@@ -134,7 +142,7 @@ export default function HistoryDetailScreen() {
           </View>
         </Card>
 
-        {/* 구매 품목 및 미구매 품목 상세 내역 */}
+        {/* 2. 구매 품목 및 미구매 품목 상세 내역 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.titleLg, styles.titleText]}>
@@ -147,6 +155,7 @@ export default function HistoryDetailScreen() {
 
           <Card padded={false}>
             {list.items.map((item, idx) => {
+              // 구매한 품목은 실제 확정 금액, 미구매 품목은 당시 예상 금액 표시
               const displayPrice = item.checked
                 ? getItemFinalPrice(item)
                 : getItemEstimatedTotal(item);
@@ -209,6 +218,7 @@ export default function HistoryDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  // --- 화면 레이아웃 및 미존재 안내 ---
   safeArea: {
     flex: 1,
     backgroundColor: theme.surface,
@@ -229,6 +239,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
+
+  // --- 영수증 요약 카드 ---
   receiptCard: {
     gap: spacing.md,
   },
@@ -265,6 +277,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.outlineVariant,
   },
+
+  // --- 품목별 상세 내역 행 ---
   section: {
     gap: spacing.sm + 4,
   },
@@ -295,6 +309,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+
+  // --- 텍스트 색상 및 미구매 취소선 ---
   titleText: {
     color: theme.onSurface,
   },

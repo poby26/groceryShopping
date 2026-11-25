@@ -1,7 +1,8 @@
 /**
  * @file tabs/history.tsx
  * @description '장보기 이력' 화면입니다.
- * 전체 / 주간 / 월간 / 연간 필터 탭에 따라 완료된 장보기 요약과 목록(연간 탭은 월별 집계)을 보여줍니다.
+ * 전체 / 주간 / 월간 / 연간 필터 탭(`SegmentedTabs`)에 따라 완료된 장보기의 요약 지표와
+ * 상세 이력 목록(연간 탭의 경우 올해 월별 집계 카드)을 표시합니다.
  */
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -34,6 +35,7 @@ import {
   formatKoreanDateShort,
 } from '../../utils/format';
 
+/** 상단 이력 필터 세그먼트 탭 옵션 */
 const FILTER_OPTIONS: { key: HistoryFilter; label: string }[] = [
   { key: 'all', label: '전체' },
   { key: 'weekly', label: '주간' },
@@ -41,13 +43,19 @@ const FILTER_OPTIONS: { key: HistoryFilter; label: string }[] = [
   { key: 'yearly', label: '연간' },
 ];
 
+/**
+ * 장보기 이력 탭 화면 컴포넌트
+ */
 export default function HistoryScreen() {
   const flow = useAppFlow();
   const lists = useGroceryStore((s) => s.lists);
+
+  // 현재 선택된 기간 필터 (기본값: 'all')
   const [filter, setFilter] = useState<HistoryFilter>('all');
+  // 헤더 날짜 및 기간/연도 집계 기준 시점
   const now = useMemo(() => new Date(), []);
 
-  // 전체 탭 요약 카드 및 주간/월간/연간 KPI 카드용 통계 계산
+  // '전체' 탭의 기간별 비교 카드 및 '주간'/'월간'/'연간' 탭의 3열 KPI 카드용 통계 계산
   const weeklySummary = useMemo(
     () => computePeriodSummary(lists, 'weekly', now),
     [lists, now]
@@ -61,22 +69,26 @@ export default function HistoryScreen() {
     [lists, now]
   );
 
-  // 선택된 필터에 해당하는 완료 이력 목록
+  // 선택된 필터('all' | 'weekly' | 'monthly' | 'yearly')에 해당하는 완료 이력 목록 (최신순)
   const filteredCompleted = useMemo(
     () => filterCompletedListsByPeriod(lists, filter, now),
     [lists, filter, now]
   );
 
-  // 연간 탭에서 사용하는 올해 월별 집계 목록
+  // '연간' 탭에서 사용하는 올해 월별(1월~12월) 집계 목록
   const monthlyGroups = useMemo(
     () => groupCompletedListsByMonth(lists, now.getFullYear()),
     [lists, now]
   );
 
-  /** 완료된 장보기 1건 카드 렌더링 (탭 시 영수증 상세 화면으로 이동) */
+  /**
+   * 완료된 개별 장보기 1건 카드를 렌더링합니다.
+   * 카드를 탭하면 해당 장보기의 영수증 상세 화면(`history/[id]`)으로 이동합니다.
+   */
   const renderHistoryItemCard = (item: ShoppingList) => {
     const paid = getListFinalPaid(item);
     const discount = getListFinalDiscount(item);
+    // 완료 시각이 있으면 우선 사용하고, 없으면 마지막 수정 시각으로 대체
     const dateIso = item.completedAt ?? item.updatedAt;
 
     return (
@@ -88,6 +100,7 @@ export default function HistoryScreen() {
           pressed && styles.historyCardPressed,
         ]}
       >
+        {/* 좌측: 장보기 제목 및 날짜·품목 수 메타 정보 */}
         <View style={styles.historyLeft}>
           <Text style={[typography.titleMd, styles.cardTitle]} numberOfLines={1}>
             {item.title}
@@ -96,6 +109,8 @@ export default function HistoryScreen() {
             {formatDotDate(dateIso)} · {item.items.length}개 품목
           </Text>
         </View>
+
+        {/* 우측: 최종 결제 금액, 할인 금액(0원 초과 시) 및 상세 이동 화살표 */}
         <View style={styles.historyRight}>
           <View style={styles.amountCol}>
             <Text style={[typography.titleMd, tabularNums, styles.cardTitle]}>
@@ -117,6 +132,7 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* 최상단 브랜드 헤더 */}
       <AppHeader
         mode="brand"
         title="장보기 이력"
@@ -128,13 +144,14 @@ export default function HistoryScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* 기간 필터 세그먼트 탭 (전체 / 주간 / 월간 / 연간) */}
         <SegmentedTabs
           options={FILTER_OPTIONS}
           value={filter}
           onChange={setFilter}
         />
 
-        {/* 전체 탭: 주간·월간·연간 비교 요약 + 전체 완료 목록 */}
+        {/* 1) '전체' 탭: 주간·월간·연간 비교 요약 카드 + 전체 완료 이력 리스트 */}
         {filter === 'all' ? (
           <>
             <Card style={styles.allSummaryCard}>
@@ -210,7 +227,7 @@ export default function HistoryScreen() {
           </>
         ) : null}
 
-        {/* 주간 / 월간 탭: 3열 KPI 요약 + 해당 기간 완료 목록 */}
+        {/* 2) '주간' / '월간' 탭: 3열 KPI 요약 카드(지출·총 할인·완료 횟수) + 기간 내 완료 이력 */}
         {filter === 'weekly' || filter === 'monthly' ? (
           <>
             <Card style={styles.kpiRowCard}>
@@ -290,7 +307,7 @@ export default function HistoryScreen() {
           </>
         ) : null}
 
-        {/* 연간 탭: 올해 누적 KPI + 월별 집계 목록 */}
+        {/* 3) '연간' 탭: 올해 누적 KPI 카드 + 월별 집계 목록 (탭 시 해당 월 최신 장보기 상세로 이동) */}
         {filter === 'yearly' ? (
           <>
             <Card style={styles.kpiRowCard}>
@@ -417,6 +434,7 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
+  // --- 화면 레이아웃 ---
   safeArea: {
     flex: 1,
     backgroundColor: theme.surface,
@@ -430,6 +448,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
+
+  // --- '전체' 탭 기간별 비교 카드 ---
   allSummaryCard: {
     gap: spacing.md,
   },
@@ -465,6 +485,8 @@ const styles = StyleSheet.create({
   smallPillText: {
     color: theme.primary,
   },
+
+  // --- 3열 KPI 요약 카드 (주간/월간/연간) ---
   kpiRowCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -479,6 +501,8 @@ const styles = StyleSheet.create({
     height: 36,
     backgroundColor: theme.outlineVariant,
   },
+
+  // --- 이력 목록 섹션 및 개별 카드 ---
   section: {
     gap: spacing.sm + 4,
   },
@@ -520,6 +544,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
   },
+
+  // --- 텍스트 색상 및 빈 상태 ---
   cardTitle: {
     color: theme.onSurface,
   },

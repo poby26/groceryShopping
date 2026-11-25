@@ -1,9 +1,9 @@
 /**
  * @file tabs/index.tsx
  * @description '홈 - 오늘장보기' 메인 화면입니다.
- * - 주간/월간/연간 지출 및 할인 절약액 요약 카드
- * - 새 장보기 작성 CTA 버튼
- * - 예정된/진행 중인 장보기 목록 카드 (목록 수정, 장보기 시작/이어하기)
+ * - 주간/월간/연간 기간 전환 탭에 따른 지출 총액·할인 절약액·보조 지표 요약 카드
+ * - '새 장보기 작성' 주요 CTA 버튼
+ * - 아직 완료되지 않은 예정/진행 중 장보기 목록 카드 (목록 수정, 장보기 시작/이어하기)
  */
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -32,13 +32,19 @@ import {
   formatSignedDiffKRW,
 } from '../../utils/format';
 
+/** 상단 지출 요약 카드에서 선택 가능한 기간 탭 옵션 */
 const PERIOD_OPTIONS: { key: SummaryPeriod; label: string }[] = [
   { key: 'weekly', label: '주간' },
   { key: 'monthly', label: '월간' },
   { key: 'yearly', label: '연간' },
 ];
 
-/** 장보기 상태별 배지 라벨 및 톤 매핑 */
+/**
+ * 장보기 상태(`ShoppingStatus`)에 맞는 배지 라벨과 색상 톤을 반환합니다.
+ * - `shopping`: 마트에서 장보는 중 (Secondary 오렌지 톤)
+ * - `ready`: 품목 작성이 완료되어 장보기 대기 중 (Primary 그린 톤)
+ * - `draft`: 임시 작성 중 (Neutral 그레이 톤)
+ */
 function getStatusBadge(status: ShoppingStatus): {
   label: string;
   tone: 'primary' | 'secondary' | 'neutral';
@@ -54,25 +60,31 @@ function getStatusBadge(status: ShoppingStatus): {
   }
 }
 
+/**
+ * 홈 탭 메인 화면 컴포넌트
+ */
 export default function HomeScreen() {
   const flow = useAppFlow();
   const lists = useGroceryStore((s) => s.lists);
 
+  // 지출 요약 카드의 현재 선택 기간 (기본값: 주간)
   const [period, setPeriod] = useState<SummaryPeriod>('weekly');
+  // 헤더 날짜 표시 및 기간 계산의 기준 시점 (마운트 시점 고정)
   const now = useMemo(() => new Date(), []);
 
-  // 선택된 기간(주간/월간/연간)에 따른 지출·할인·평균 통계 계산
+  // 선택된 기간(주간/월간/연간)에 따른 지출·할인·평균·전월 대비·최다 방문 통계 계산
   const summary = useMemo(
     () => computePeriodSummary(lists, period, now),
     [lists, period, now]
   );
 
-  // 아직 완료되지 않은 예정/진행 중 장보기 목록 필터링
+  // 아직 완료('completed')되지 않은 예정/진행 중 장보기 목록만 필터링
   const plannedLists = useMemo(
     () => lists.filter((l) => l.status !== 'completed'),
     [lists]
   );
 
+  // 선택된 기간에 맞춰 요약 카드 상단 제목 동적 생성
   const summaryTitle =
     period === 'weekly'
       ? '이번 주 장보기 지출'
@@ -80,12 +92,14 @@ export default function HomeScreen() {
         ? `${now.getMonth() + 1}월 장보기 지출`
         : `${now.getFullYear()}년 누적 지출`;
 
+  /** 예정된 장보기 카드에서 '장보기 시작' 또는 '장보기 이어하기' 클릭 시 진행 화면으로 이동 */
   const handleStartShopping = (id: string) => {
     flow.startShoppingFlow(id);
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* 최상단 브랜드 헤더 */}
       <AppHeader
         mode="brand"
         title="오늘장보기"
@@ -97,7 +111,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* 기간별 장보기 지출 요약 섹션 */}
+        {/* 1. 기간별 장보기 지출 요약 섹션 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -113,12 +127,14 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
+          {/* 주간 / 월간 / 연간 전환 탭 */}
           <SegmentedTabs
             options={PERIOD_OPTIONS}
             value={period}
             onChange={setPeriod}
           />
 
+          {/* 지출 요약 카드 */}
           <Card style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
               <Text style={[typography.titleMd, styles.cardTitle]}>
@@ -133,6 +149,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
+            {/* 핵심 금액(총 지출) 및 할인 절약 문구 */}
             <View style={styles.summaryMain}>
               <Text
                 style={[
@@ -154,6 +171,7 @@ export default function HomeScreen() {
 
             {/* 하단 보조 지표 2열 (기간별 맞춤형 지표 표시) */}
             <View style={styles.metricsRow}>
+              {/* 좌측 지표: 연간은 월 평균, 주간/월간은 회당 평균 지출 */}
               <View style={styles.metricBox}>
                 <Text style={[typography.labelSm, styles.metricLabel]}>
                   {period === 'yearly' ? '월 평균 지출' : '회당 평균'}
@@ -171,6 +189,7 @@ export default function HomeScreen() {
 
               <View style={styles.metricDivider} />
 
+              {/* 우측 지표: 주간=예정 건수, 월간=전월 대비 증감, 연간=최다 방문 장소 */}
               <View style={styles.metricBox}>
                 <Text style={[typography.labelSm, styles.metricLabel]}>
                   {period === 'weekly'
@@ -196,7 +215,7 @@ export default function HomeScreen() {
           </Card>
         </View>
 
-        {/* 주요 CTA: 새 장보기 목록 작성 */}
+        {/* 2. 주요 CTA: 새 장보기 목록 작성 */}
         <Button
           label="새 장보기 작성"
           icon="add-shopping-cart"
@@ -205,7 +224,7 @@ export default function HomeScreen() {
           onPress={flow.openCreateList}
         />
 
-        {/* 예정된 장보기 목록 섹션 */}
+        {/* 3. 예정된 / 진행 중인 장보기 목록 섹션 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -219,6 +238,7 @@ export default function HomeScreen() {
           </View>
 
           {plannedLists.length === 0 ? (
+            /* 빈 상태(Empty State) 안내 카드 */
             <Card style={styles.emptyCard}>
               <Text style={[typography.titleMd, styles.emptyTitle]}>
                 아직 예정된 장보기가 없어요
@@ -236,6 +256,7 @@ export default function HomeScreen() {
               />
             </Card>
           ) : (
+            /* 예정/진행 중 목록 카드 리스트 */
             <View style={styles.listStack}>
               {plannedLists.map((list) => {
                 const estimatedTotal = getListEstimatedTotal(list);
@@ -281,6 +302,7 @@ export default function HomeScreen() {
                       </View>
                     </View>
 
+                    {/* 카드 하단 액션: 목록 수정 / 장보기 시작(또는 이어하기) */}
                     <View style={styles.planFooter}>
                       <Button
                         label="목록 수정"
@@ -313,6 +335,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // --- 화면 레이아웃 및 섹션 공통 ---
   safeArea: {
     flex: 1,
     backgroundColor: theme.surface,
@@ -340,6 +363,8 @@ const styles = StyleSheet.create({
   linkText: {
     color: theme.primary,
   },
+
+  // --- 지출 요약 카드 ---
   summaryCard: {
     gap: spacing.md,
   },
@@ -396,6 +421,8 @@ const styles = StyleSheet.create({
   metricValue: {
     color: theme.onSurface,
   },
+
+  // --- 예정된 장보기 목록 및 상태 배지 ---
   countBadge: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs,
@@ -458,6 +485,8 @@ const styles = StyleSheet.create({
   footerBtn: {
     flex: 1,
   },
+
+  // --- 빈 상태(Empty State) 카드 ---
   emptyCard: {
     alignItems: 'center',
     paddingVertical: spacing.lg,

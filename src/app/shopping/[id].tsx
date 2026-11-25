@@ -1,8 +1,10 @@
 /**
  * @file shopping/[id].tsx
  * @description '장보기 진행' 화면입니다.
- * - 마트에서 이동하며 구매 품목을 체크하고, 체크 시 '구매 금액 확인 모달'을 통해 실제 판매가·할인가를 기록합니다.
- * - 장보는 중 즉석 품목 추가('새 품목 입력 모달')와 결제 정산(자동 합산 + 수동 보정)을 지원합니다.
+ * - 마트에서 이동하며 구매 품목을 체크하고, 미체크 항목을 탭하면 '구매 금액 확인 모달(`ItemPriceModal`)'을 열어
+ *   실제 판매가·할인가·최종 구매가를 확정합니다.
+ * - 장보는 중 현장에서 품목을 즉시 추가('새 품목 입력 모달(`AddItemModal`)')할 수 있습니다.
+ * - 하단 '결제 정산 기록' 영역은 체크된 품목 합계와 자동 동기화되며, 필요 시 사용자가 최종 결제액/할인액을 수동 보정할 수 있습니다.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -48,22 +50,27 @@ import {
   parseNumericInput,
 } from '../../utils/format';
 
+/**
+ * 장보기 진행 화면 컴포넌트
+ */
 export default function ActiveShoppingScreen() {
   const flow = useAppFlow();
+  // URL 동적 세그먼트에서 장보기 목록 ID 추출
   const { id } = useLocalSearchParams<{ id: string }>();
 
+  // 스토어에서 대상 목록과 품목 추가/체크 확정/체크 해제 액션 구독
   const list = useGroceryStore((s) => s.lists.find((l) => l.id === id));
   const addItemToList = useGroceryStore((s) => s.addItemToList);
   const confirmItemPurchase = useGroceryStore((s) => s.confirmItemPurchase);
   const uncheckItem = useGroceryStore((s) => s.uncheckItem);
 
-  // 모달 제어 상태
+  // 모달 제어 상태: priceModalItem이 null이 아니면 구매 금액 확인 모달 표시
   const [priceModalItem, setPriceModalItem] = useState<ShoppingItem | null>(
     null
   );
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // 현재까지 체크된 품목 개수 및 합산 금액 계산
+  // 현재까지 체크된 품목 개수 및 합산 금액(최종 구매가 합계, 할인액 합계) 계산
   const summary = useMemo(
     () =>
       list
@@ -77,18 +84,21 @@ export default function ActiveShoppingScreen() {
     [list]
   );
 
+  // 계획 당시 기준 전체 품목 예상 총액
   const estimatedTotal = useMemo(
     () => (list ? getListEstimatedTotal(list) : 0),
     [list]
   );
 
-  // 결제 정산 입력값: 사용자가 직접 수정하기 전까지는 체크된 품목 합계와 자동 동기화
+  // 결제 정산 입력값 상태
+  // manualOverride가 false인 동안에는 품목 체크/가격 수정 시 합계 금액이 자동으로 동기화됩니다.
   const [manualOverride, setManualOverride] = useState(false);
   const [paidText, setPaidText] = useState(String(summary.checkedSubtotal));
   const [discountText, setDiscountText] = useState(
     String(summary.checkedDiscountTotal)
   );
 
+  // 수동 보정 모드가 아닐 때 체크된 품목 합계 변화에 맞춰 정산 입력창 자동 갱신
   useEffect(() => {
     if (!manualOverride) {
       setPaidText(String(summary.checkedSubtotal));
@@ -96,6 +106,7 @@ export default function ActiveShoppingScreen() {
     }
   }, [summary.checkedSubtotal, summary.checkedDiscountTotal, manualOverride]);
 
+  // 잘못된 ID 접근 또는 삭제된 목록일 경우 복구 안내 화면 표시
   if (!list) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -114,10 +125,15 @@ export default function ActiveShoppingScreen() {
     );
   }
 
+  // 하단 정산 바 및 완료 확인 다이얼로그에 사용할 숫자 파싱 값
   const finalPaidNum = parseNumericInput(paidText);
   const finalDiscountNum = parseNumericInput(discountText);
 
-  /** 체크박스 탭 시: 이미 체크되어 있으면 해제하고, 미체크 상태면 구매 금액 확인 모달을 엽니다. */
+  /**
+   * 좌측 체크박스 탭 핸들러
+   * - 이미 체크된 품목: 확인 모달 없이 즉시 체크 해제
+   * - 미체크 품목: 구매 금액 확인 모달을 열어 실구매가/할인가 입력 후 체크 확정
+   */
   const handleCheckboxPress = (item: ShoppingItem) => {
     if (item.checked) {
       uncheckItem(list.id, item.id);
@@ -126,7 +142,10 @@ export default function ActiveShoppingScreen() {
     }
   };
 
-  /** 장보기 완료 버튼 클릭 시 최종 금액 확인 후 이력에 저장합니다. */
+  /**
+   * '장보기 완료' 버튼 클릭 핸들러
+   * 모바일/웹 공용 확인 다이얼로그(`showConfirm`)로 최종 결제·할인 금액을 확인한 뒤 완료 처리합니다.
+   */
   const handleConfirmComplete = () => {
     showConfirm(
       '장보기를 완료할까요?',
@@ -143,6 +162,7 @@ export default function ActiveShoppingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* 상단 태스크 헤더: 장보기 제목, 담긴 품목 진행률, '장보는 중' 배지 */}
       <AppHeader
         mode="task"
         title={list.title}
@@ -152,6 +172,7 @@ export default function ActiveShoppingScreen() {
         onBack={flow.goBack}
       />
 
+      {/* iOS 키보드가 정산 입력 필드를 가리지 않도록 padding 보정 */}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -162,7 +183,7 @@ export default function ActiveShoppingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* 장보는 중 즉석 품목 추가 버튼 */}
+          {/* 1. 장보는 중 즉석 품목 추가 버튼 */}
           <Button
             label="품목 추가"
             icon="add"
@@ -171,7 +192,7 @@ export default function ActiveShoppingScreen() {
             onPress={() => setAddModalOpen(true)}
           />
 
-          {/* 구매 품목 체크리스트 섹션 */}
+          {/* 2. 구매 품목 체크리스트 섹션 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -189,8 +210,10 @@ export default function ActiveShoppingScreen() {
                 const est = getItemEstimatedTotal(item);
                 const sale = getItemSalePrice(item);
                 const discount = getItemDiscount(item);
+                // 체크된 품목은 확정된 최종 구매가를, 미체크 품목은 예상 총액을 표시
                 const finalPrice = item.checked ? getItemFinalPrice(item) : est;
 
+                // 품목명 아래 보조 설명 텍스트 (체크 상태 및 할인 여부에 따라 분기)
                 const subMeta = item.checked
                   ? discount > 0
                     ? `판매 ${formatKRW(sale)} · 할인 ${formatDiscountKRW(discount)}`
@@ -206,6 +229,7 @@ export default function ActiveShoppingScreen() {
                       item.checked && styles.checkRowChecked,
                     ]}
                   >
+                    {/* 좌측: 체크박스 토글 영역 */}
                     <Pressable
                       onPress={() => handleCheckboxPress(item)}
                       accessibilityRole="checkbox"
@@ -228,7 +252,7 @@ export default function ActiveShoppingScreen() {
                       </View>
                     </Pressable>
 
-                    {/* 품목명/금액 영역을 탭하면 언제든 구매 금액 확인 모달에서 가격 수정 가능 */}
+                    {/* 중앙: 품목명/메타 정보 (탭 시 구매 금액 확인 모달 열림) */}
                     <Pressable
                       onPress={() => setPriceModalItem(item)}
                       style={styles.checkContent}
@@ -255,6 +279,7 @@ export default function ActiveShoppingScreen() {
                       </Text>
                     </Pressable>
 
+                    {/* 우측: 표시 금액 (탭 시 구매 금액 확인 모달 열림) */}
                     <Pressable
                       onPress={() => setPriceModalItem(item)}
                       style={styles.priceHit}
@@ -277,7 +302,7 @@ export default function ActiveShoppingScreen() {
             </Card>
           </View>
 
-          {/* 결제 정산 기록 섹션 */}
+          {/* 3. 결제 정산 기록 섹션 (장바구니 합산 자동 반영 + 필요 시 수동 수정 가능) */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -314,6 +339,8 @@ export default function ActiveShoppingScreen() {
                   containerStyle={styles.flex}
                 />
               </View>
+
+              {/* 수동 입력으로 합계가 어긋난 경우 자동 합계로 되돌리는 복원 링크 제공 */}
               {manualOverride ? (
                 <Pressable
                   onPress={() => setManualOverride(false)}
@@ -355,7 +382,7 @@ export default function ActiveShoppingScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* 구매 금액 확인 모달 */}
+      {/* 구매 금액 확인 모달 (체크 및 단가·할인 수정) */}
       <ItemPriceModal
         visible={priceModalItem !== null}
         item={priceModalItem}
@@ -379,6 +406,7 @@ export default function ActiveShoppingScreen() {
 }
 
 const styles = StyleSheet.create({
+  // --- 화면 레이아웃 및 미존재 안내 ---
   safeArea: {
     flex: 1,
     backgroundColor: theme.surface,
@@ -410,6 +438,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: theme.onSurface,
   },
+
+  // --- 구매 품목 체크리스트 행 ---
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -462,6 +492,8 @@ const styles = StyleSheet.create({
   itemPriceDefault: {
     color: theme.onSurface,
   },
+
+  // --- 텍스트 강조 색상 ---
   primaryText: {
     color: theme.primary,
   },
@@ -471,6 +503,8 @@ const styles = StyleSheet.create({
   mutedText: {
     color: theme.onSurfaceVariant,
   },
+
+  // --- 결제 정산 기록 카드 및 하단 고정 바 ---
   settlementCard: {
     gap: spacing.sm,
   },
