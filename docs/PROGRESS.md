@@ -1,8 +1,8 @@
 # 📋 [오늘장보기] 프로젝트 인수인계 및 진행 내역 지침서 (PROGRESS.md)
 
-> **문서 버전**: v1.0.0  
-> **최종 갱신일**: 2026년 11월 25일  
-> **프로젝트 경로**: `c:\dev\workspace\groceryShopping`  
+> **문서 버전**: v1.1.0  
+> **최종 갱신일**: 2026년 11월 26일  
+> **프로젝트 경로**: `<workspace>/groceryShopping` (예: `d:\workspace\groceryShopping`, `c:\dev\workspace\groceryShopping` 등 PC별 클론 경로)  
 > **Git 원격 저장소**: `https://github.com/poby26/groceryShopping.git` (기본 브랜치: `master`, 로그인 계정: `poby26`)  
 > **문서 목적**: 사무실, 자택 등 서로 다른 PC의 **Antigravity 에이전트**가 프로젝트 컨텍스트를 즉시 100% 복원하여 끊김 없이 작업을 이어가도록 안내하며, **사용자**가 프로젝트 진행 현황과 아키텍처를 한눈에 확인할 수 있도록 지원합니다.
 
@@ -154,6 +154,11 @@
 - [`src/theme/tokens.ts`](file:///c:/dev/workspace/groceryShopping/src/theme/tokens.ts)의 `typography` 전체 토큰을 상향하여 최소 글자 크기를 `14px` 이상(`labelSm` 14px, `bodyMd`/`labelLg` 16px, `bodyLg` 17px, `titleMd` 18px, `titleLg` 20px, `headlineMd` 22px, `displayLgMobile` 32px)으로 키웠습니다.
 - 커진 폰트에 맞춰 하단 탭 바([`tabs/_layout.tsx`](file:///c:/dev/workspace/groceryShopping/src/app/tabs/_layout.tsx), 라벨 13px / 높이 68px), [`Button.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/Button.tsx), [`InputField.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/InputField.tsx), [`SegmentedTabs.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/SegmentedTabs.tsx)의 최소 높이를 함께 보정했습니다.
 
+### ✅ [9단계] 화면·컴포넌트 상세 주석 보강 및 신규 PC 개발 환경 복구 완료 (`0c71024`)
+- `src/app/`(8개 파일) 및 `src/components/`(7개 파일) 총 15개 소스 파일에 대해 코드 로직 변경 없이 한국어 상세 주석(Props 규격, 상태·파생 데이터 흐름, 핸들러·예외 분기, UI 섹션 및 스타일 그룹)을 보강했습니다. (`npx tsc --noEmit` 타입 오류 0건 확인)
+- 신규 PC 클론 환경에서 `package-lock.json` 기준 `npm ci`로 `expo@58.0.26` 포함 전체 의존성을 일치시켜 정상 동작을 검증했습니다.
+- 다중 GitHub 계정 환경에서 발생하던 push 권한 오류(`403`) 원인을 파악해 Windows 자격 증명 관리자(`github.com` → `poby26`)를 정비했습니다.
+
 ---
 
 ## 🚀 5. 앞으로 남은 작업 로드맵 (Upcoming Roadmap)
@@ -183,8 +188,9 @@
 ```bash
 git clone https://github.com/poby26/groceryShopping.git
 cd groceryShopping
-npm install
+npm ci
 ```
+> **주의**: 최초 세팅이나 `package-lock.json` 동기화 시에는 `npm install` 대신 **`npm ci`** 사용을 권장합니다. `npm install`은 로컬 환경에 따라 `package.json`/`package-lock.json`을 변경하거나 SDK 버전을 어긋나게 만들 수 있습니다.
 
 ### 2) 개발 서버 실행
 ```bash
@@ -206,13 +212,29 @@ npx expo export --platform web --output-dir .expo-verify-web
 npx expo export --platform android --output-dir .expo-verify-and
 ```
 
-### 4) Git 작업 흐름
+### 4) 다중 PC(사무실·집·노트북) 양방향 Git 동기화 흐름
+
+#### ① 작업 시작 전 (다른 PC의 최신 작업 이어받기)
 ```bash
+git status
+git pull origin master
+# package-lock.json이 변경된 경우에만 아래 실행
+npm ci
+```
+- `pull` 직후 반드시 `docs/PROGRESS.md`의 **최근 완료 내역**과 **남은 작업 로드맵**을 확인해 이전 PC에서 어디까지 진행했는지 파악합니다.
+
+#### ② 작업 마무리 후 (다른 PC로 작업 상태 넘기기)
+```bash
+# 1. 타입 체크 및 필요 시 번들 검증
+npx tsc --noEmit
+
+# 2. docs/PROGRESS.md에 이번 세션 작업 내역 및 다음 할 일 업데이트 후 커밋·푸시
 git status
 git add -A
 git commit -m "feat: [작업 요약 내용 기술]"
 git push origin master
 ```
+- **GitHub `403 Permission denied` 발생 시**: PC에 다른 GitHub 계정이 캐시된 경우이므로 `cmdkey /delete:git:https://github.com` 실행 후 `git push origin master`로 **`poby26`** 계정에 다시 로그인합니다.
 
 ---
 
