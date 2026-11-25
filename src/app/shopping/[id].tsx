@@ -69,11 +69,11 @@ export default function ActiveShoppingScreen() {
       list
         ? getCheckedItemsSummary(list)
         : {
-            checkedCount: 0,
-            totalCount: 0,
-            checkedSubtotal: 0,
-            checkedDiscountTotal: 0,
-          },
+          checkedCount: 0,
+          totalCount: 0,
+          checkedSubtotal: 0,
+          checkedDiscountTotal: 0,
+        },
     [list]
   );
 
@@ -166,7 +166,7 @@ export default function ActiveShoppingScreen() {
           <Button
             label="품목 추가"
             icon="add"
-            variant="secondary"
+            variant="primary"
             fullWidth
             onPress={() => setAddModalOpen(true)}
           />

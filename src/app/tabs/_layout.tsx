@@ -14,6 +14,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        sceneStyle: { backgroundColor: theme.surface },
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.outline,
         // Stitch 디자인 시스템: 그림자 없이 상단 1px 외곽선(outlineVariant)으로 분리

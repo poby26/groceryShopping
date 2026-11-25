@@ -383,6 +383,7 @@ const styles = StyleSheet.create({
   },
   priceField: {
     flex: 1,
+    minWidth: 0,
   },
   qtyWrap: {
     gap: spacing.xs,
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
+    height: 48,
     borderRadius: radius.default,
     borderWidth: 1,
     borderColor: theme.outlineVariant,
@@ -402,8 +403,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   stepBtn: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: radius.sm,
     backgroundColor: theme.surfaceContainerLow,
     alignItems: 'center',

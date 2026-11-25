@@ -34,7 +34,11 @@ export function SegmentedTabs<T extends string>({
             onPress={() => onChange(opt.key)}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            style={[styles.tab, selected && styles.tabSelected]}
+            style={({ pressed }) => [
+              styles.tab,
+              selected ? styles.tabSelected : styles.tabDefault,
+              pressed && !selected && styles.tabPressed,
+            ]}
           >
             <Text
               style={[
@@ -54,7 +58,9 @@ export function SegmentedTabs<T extends string>({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: theme.surfaceContainer,
+    backgroundColor: theme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: theme.outlineVariant,
     borderRadius: radius.md,
     padding: spacing.xs,
     gap: spacing.xs,
@@ -66,8 +72,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.sm,
   },
+  tabDefault: {
+    backgroundColor: 'transparent',
+  },
   tabSelected: {
     backgroundColor: theme.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: theme.outlineVariant,
+  },
+  tabPressed: {
+    backgroundColor: theme.surfaceContainerLow,
   },
   labelSelected: {
     color: theme.primary,

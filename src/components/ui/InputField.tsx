@@ -5,10 +5,12 @@
  */
 import React, { useState } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TextInputProps,
+  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
@@ -79,6 +81,7 @@ export function InputField({
           style={[
             styles.input,
             numeric && styles.numericInput,
+            Platform.OS === 'web' && ({ outlineStyle: 'none', outlineWidth: 0 } as unknown as TextStyle),
           ]}
           {...rest}
         />
@@ -106,16 +109,17 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceContainerLowest,
     borderWidth: 1,
     borderColor: theme.outlineVariant,
+    overflow: 'hidden',
   },
   inputBoxFocused: {
     borderColor: theme.primary,
-    borderWidth: 1.5,
   },
   leftIcon: {
     marginRight: spacing.sm,
   },
   input: {
     flex: 1,
+    minWidth: 0,
     ...typography.bodyMd,
     color: theme.onSurface,
     paddingVertical: spacing.sm,
