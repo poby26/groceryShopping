@@ -99,12 +99,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   sizeMd: {
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   sizeSm: {
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },

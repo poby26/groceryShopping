@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
     borderRadius: radius.default,
     backgroundColor: theme.surfaceContainerLowest,

@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 36,
+    minHeight: 42,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,

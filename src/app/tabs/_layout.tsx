@@ -23,14 +23,14 @@ export default function TabsLayout() {
           borderTopColor: theme.outlineVariant,
           elevation: 0,
           shadowOpacity: 0,
-          height: 64,
+          height: 68,
           paddingTop: 6,
           paddingBottom: 8,
         },
         tabBarLabelStyle: {
           fontFamily: fontFamilies.medium,
-          fontSize: 12,
-          lineHeight: 16,
+          fontSize: 13,
+          lineHeight: 18,
         },
       }}
     >
