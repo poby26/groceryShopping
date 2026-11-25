@@ -1,3 +1,9 @@
+/**
+ * @file create-list.tsx
+ * @description '장보기 목록 작성 / 수정' 화면입니다.
+ * - 라우트 파라미터 `id` 유무에 따라 신규 작성 모드와 기존 목록 수정 모드로 동작합니다.
+ * - 장보기 이름, 품목 추가(품목명·예상 단가·수량 스테퍼), 담을 품목 삭제, 총 예상 금액 실시간 계산을 지원합니다.
+ */
 import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -9,12 +15,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppHeader } from '../components/ui/AppHeader';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { InputField } from '../components/ui/InputField';
+import { useAppFlow } from '../navigation/useAppFlow';
 import { useGroceryStore } from '../store/useGroceryStore';
 import {
   radius,
@@ -29,7 +36,7 @@ import { showAlert } from '../utils/alert';
 import { formatKRW, parseNumericInput } from '../utils/format';
 
 export default function CreateListScreen() {
-  const router = useRouter();
+  const flow = useAppFlow();
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const existingList = useGroceryStore((s) =>
@@ -37,23 +44,25 @@ export default function CreateListScreen() {
   );
   const createList = useGroceryStore((s) => s.createList);
   const updateList = useGroceryStore((s) => s.updateList);
-  const startShopping = useGroceryStore((s) => s.startShopping);
 
   const isEditMode = Boolean(existingList);
 
+  // 편집 중인 목록 제목과 품목 배열 (저장 전까지는 로컬 상태로 관리)
   const [title, setTitle] = useState(existingList?.title ?? '');
   const [items, setItems] = useState<ShoppingItem[]>(existingList?.items ?? []);
 
-  // 품목 추가 폼 상태
+  // 상단 품목 추가 폼 상태
   const [itemName, setItemName] = useState('');
   const [itemPriceText, setItemPriceText] = useState('');
   const [itemQty, setItemQty] = useState(1);
 
+  // 담긴 모든 품목의 총 예상 금액 계산
   const totalEstimated = useMemo(
     () => items.reduce((sum, item) => sum + getItemEstimatedTotal(item), 0),
     [items]
   );
 
+  /** 품목 추가 폼의 입력값을 임시 목록에 추가하고 폼을 초기화합니다. */
   const handleAddItem = () => {
     const trimmed = itemName.trim();
     if (!trimmed) return;
@@ -72,10 +81,15 @@ export default function CreateListScreen() {
     setItemQty(1);
   };
 
+  /** 담을 품목 리스트에서 특정 품목을 제거합니다. */
   const handleRemoveItem = (itemId: string) => {
     setItems((prev) => prev.filter((item) => item.id !== itemId));
   };
 
+  /**
+   * 목록을 스토어에 저장한 뒤, `shouldStartShopping` 여부에 따라
+   * 장보기 진행 화면으로 바로 이동하거나 이전 화면으로 돌아갑니다.
+   */
   const saveAndNavigate = (shouldStartShopping: boolean) => {
     const trimmedTitle = title.trim() || '새 장보기';
     if (shouldStartShopping && items.length === 0) {
@@ -115,10 +129,9 @@ export default function CreateListScreen() {
     }
 
     if (shouldStartShopping) {
-      startShopping(targetId);
-      router.replace(`/shopping/${targetId}`);
+      flow.startShoppingFlow(targetId, { replace: true });
     } else {
-      router.back();
+      flow.goBack();
     }
   };
 
@@ -129,7 +142,7 @@ export default function CreateListScreen() {
         title={isEditMode ? '장보기 목록 수정' : '장보기 목록 작성'}
         badgeLabel={isEditMode ? '목록 수정' : '신규 작성'}
         badgeTone="neutral"
-        onBack={() => router.back()}
+        onBack={flow.goBack}
       />
 
       <KeyboardAvoidingView
@@ -142,7 +155,7 @@ export default function CreateListScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* List Title Input */}
+          {/* 장보기 이름 입력 */}
           <Card>
             <InputField
               label="장보기 이름"
@@ -153,7 +166,7 @@ export default function CreateListScreen() {
             />
           </Card>
 
-          {/* Add Item Form */}
+          {/* 품목 추가 입력 폼 */}
           <View style={styles.section}>
             <Text style={[typography.titleLg, styles.sectionTitle]}>
               품목 추가
@@ -224,7 +237,7 @@ export default function CreateListScreen() {
             </Card>
           </View>
 
-          {/* Added Items List */}
+          {/* 추가된 품목 리스트 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -303,7 +316,7 @@ export default function CreateListScreen() {
           </View>
         </ScrollView>
 
-        {/* Bottom Summary & Action Bar */}
+        {/* 하단 고정 요약 및 저장/시작 바 */}
         <View style={styles.bottomBar}>
           <View style={styles.bottomSummary}>
             <Text style={[typography.labelSm, styles.mutedText]}>

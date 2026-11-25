@@ -1,3 +1,8 @@
+/**
+ * @file InputField.tsx
+ * @description 라벨, 좌측 아이콘, 우측 단위 접미사('원'), 힌트 텍스트 및 숫자 입력 정렬(`tabular-nums` + 우측 정렬)을
+ * 지원하는 공통 입력 필드 컴포넌트입니다.
+ */
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -17,10 +22,15 @@ import {
 } from '../../theme/tokens';
 
 interface InputFieldProps extends Omit<TextInputProps, 'style'> {
+  /** 입력 필드 상단 라벨 */
   label?: string;
+  /** 입력 필드 하단 안내 문구 */
   hint?: string;
+  /** 좌측에 표시할 MaterialIcons 아이콘 이름 */
   leftIcon?: keyof typeof MaterialIcons.glyphMap;
+  /** 우측 단위 접미사 (예: '원') */
   suffix?: string;
+  /** true일 경우 숫자 키패드, 우측 정렬, 고정폭 숫자(tabular-nums)를 적용 */
   numeric?: boolean;
   containerStyle?: ViewStyle;
 }

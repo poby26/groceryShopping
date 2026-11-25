@@ -1,11 +1,16 @@
+/**
+ * @file tabs/history.tsx
+ * @description '장보기 이력' 화면입니다.
+ * 전체 / 주간 / 월간 / 연간 필터 탭에 따라 완료된 장보기 요약과 목록(연간 탭은 월별 집계)을 보여줍니다.
+ */
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppHeader } from '../../components/ui/AppHeader';
 import { Card } from '../../components/ui/Card';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
+import { useAppFlow } from '../../navigation/useAppFlow';
 import { useGroceryStore } from '../../store/useGroceryStore';
 import {
   radius,
@@ -37,11 +42,12 @@ const FILTER_OPTIONS: { key: HistoryFilter; label: string }[] = [
 ];
 
 export default function HistoryScreen() {
-  const router = useRouter();
+  const flow = useAppFlow();
   const lists = useGroceryStore((s) => s.lists);
   const [filter, setFilter] = useState<HistoryFilter>('all');
   const now = useMemo(() => new Date(), []);
 
+  // 전체 탭 요약 카드 및 주간/월간/연간 KPI 카드용 통계 계산
   const weeklySummary = useMemo(
     () => computePeriodSummary(lists, 'weekly', now),
     [lists, now]
@@ -55,16 +61,19 @@ export default function HistoryScreen() {
     [lists, now]
   );
 
+  // 선택된 필터에 해당하는 완료 이력 목록
   const filteredCompleted = useMemo(
     () => filterCompletedListsByPeriod(lists, filter, now),
     [lists, filter, now]
   );
 
+  // 연간 탭에서 사용하는 올해 월별 집계 목록
   const monthlyGroups = useMemo(
     () => groupCompletedListsByMonth(lists, now.getFullYear()),
     [lists, now]
   );
 
+  /** 완료된 장보기 1건 카드 렌더링 (탭 시 영수증 상세 화면으로 이동) */
   const renderHistoryItemCard = (item: ShoppingList) => {
     const paid = getListFinalPaid(item);
     const discount = getListFinalDiscount(item);
@@ -73,7 +82,7 @@ export default function HistoryScreen() {
     return (
       <Pressable
         key={item.id}
-        onPress={() => router.push(`/history/${item.id}`)}
+        onPress={() => flow.openHistoryDetail(item.id)}
         style={({ pressed }) => [
           styles.historyCard,
           pressed && styles.historyCardPressed,
@@ -125,7 +134,7 @@ export default function HistoryScreen() {
           onChange={setFilter}
         />
 
-        {/* 전체 탭: 기간별 요약 + 전체 완료 목록 */}
+        {/* 전체 탭: 주간·월간·연간 비교 요약 + 전체 완료 목록 */}
         {filter === 'all' ? (
           <>
             <Card style={styles.allSummaryCard}>
@@ -201,7 +210,7 @@ export default function HistoryScreen() {
           </>
         ) : null}
 
-        {/* 주간 / 월간 탭 */}
+        {/* 주간 / 월간 탭: 3열 KPI 요약 + 해당 기간 완료 목록 */}
         {filter === 'weekly' || filter === 'monthly' ? (
           <>
             <Card style={styles.kpiRowCard}>
@@ -281,7 +290,7 @@ export default function HistoryScreen() {
           </>
         ) : null}
 
-        {/* 연간 탭 */}
+        {/* 연간 탭: 올해 누적 KPI + 월별 집계 목록 */}
         {filter === 'yearly' ? (
           <>
             <Card style={styles.kpiRowCard}>
@@ -345,7 +354,7 @@ export default function HistoryScreen() {
                     <Pressable
                       key={`${group.year}-${group.month}`}
                       onPress={() =>
-                        router.push(`/history/${group.latestListId}`)
+                        flow.openHistoryDetail(group.latestListId)
                       }
                       style={({ pressed }) => [
                         styles.historyCard,

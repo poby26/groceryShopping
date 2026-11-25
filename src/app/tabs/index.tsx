@@ -1,11 +1,18 @@
+/**
+ * @file tabs/index.tsx
+ * @description '홈 - 오늘장보기' 메인 화면입니다.
+ * - 주간/월간/연간 지출 및 할인 절약액 요약 카드
+ * - 새 장보기 작성 CTA 버튼
+ * - 예정된/진행 중인 장보기 목록 카드 (목록 수정, 장보기 시작/이어하기)
+ */
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { AppHeader } from '../../components/ui/AppHeader';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
+import { useAppFlow } from '../../navigation/useAppFlow';
 import { useGroceryStore } from '../../store/useGroceryStore';
 import {
   radius,
@@ -31,6 +38,7 @@ const PERIOD_OPTIONS: { key: SummaryPeriod; label: string }[] = [
   { key: 'yearly', label: '연간' },
 ];
 
+/** 장보기 상태별 배지 라벨 및 톤 매핑 */
 function getStatusBadge(status: ShoppingStatus): {
   label: string;
   tone: 'primary' | 'secondary' | 'neutral';
@@ -47,18 +55,19 @@ function getStatusBadge(status: ShoppingStatus): {
 }
 
 export default function HomeScreen() {
-  const router = useRouter();
+  const flow = useAppFlow();
   const lists = useGroceryStore((s) => s.lists);
-  const startShopping = useGroceryStore((s) => s.startShopping);
 
   const [period, setPeriod] = useState<SummaryPeriod>('weekly');
   const now = useMemo(() => new Date(), []);
 
+  // 선택된 기간(주간/월간/연간)에 따른 지출·할인·평균 통계 계산
   const summary = useMemo(
     () => computePeriodSummary(lists, period, now),
     [lists, period, now]
   );
 
+  // 아직 완료되지 않은 예정/진행 중 장보기 목록 필터링
   const plannedLists = useMemo(
     () => lists.filter((l) => l.status !== 'completed'),
     [lists]
@@ -72,8 +81,7 @@ export default function HomeScreen() {
         : `${now.getFullYear()}년 누적 지출`;
 
   const handleStartShopping = (id: string) => {
-    startShopping(id);
-    router.push(`/shopping/${id}`);
+    flow.startShoppingFlow(id);
   };
 
   return (
@@ -89,14 +97,14 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Period Summary Section */}
+        {/* 기간별 장보기 지출 요약 섹션 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.titleLg, styles.sectionTitle]}>
               장보기 요약
             </Text>
             <Pressable
-              onPress={() => router.push('/(tabs)/history')}
+              onPress={flow.goHistoryTab}
               hitSlop={8}
             >
               <Text style={[typography.labelLg, styles.linkText]}>
@@ -144,6 +152,7 @@ export default function HomeScreen() {
               </Text>
             </View>
 
+            {/* 하단 보조 지표 2열 (기간별 맞춤형 지표 표시) */}
             <View style={styles.metricsRow}>
               <View style={styles.metricBox}>
                 <Text style={[typography.labelSm, styles.metricLabel]}>
@@ -187,16 +196,16 @@ export default function HomeScreen() {
           </Card>
         </View>
 
-        {/* Primary CTA */}
+        {/* 주요 CTA: 새 장보기 목록 작성 */}
         <Button
           label="새 장보기 작성"
           icon="add-shopping-cart"
           variant="primary"
           fullWidth
-          onPress={() => router.push('/create-list')}
+          onPress={flow.openCreateList}
         />
 
-        {/* Planned Shopping Lists */}
+        {/* 예정된 장보기 목록 섹션 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -222,7 +231,7 @@ export default function HomeScreen() {
                 icon="add-shopping-cart"
                 variant="secondary"
                 size="sm"
-                onPress={() => router.push('/create-list')}
+                onPress={flow.openCreateList}
                 style={styles.emptyBtn}
               />
             </Card>
@@ -254,7 +263,7 @@ export default function HomeScreen() {
                           styles.statusPill,
                           badge.tone === 'primary' && styles.statusPillPrimary,
                           badge.tone === 'secondary' &&
-                            styles.statusPillSecondary,
+                          styles.statusPillSecondary,
                           badge.tone === 'neutral' && styles.statusPillNeutral,
                         ]}
                       >
@@ -263,7 +272,7 @@ export default function HomeScreen() {
                             typography.labelSm,
                             badge.tone === 'primary' && styles.statusTextPrimary,
                             badge.tone === 'secondary' &&
-                              styles.statusTextSecondary,
+                            styles.statusTextSecondary,
                             badge.tone === 'neutral' && styles.statusTextNeutral,
                           ]}
                         >
@@ -277,12 +286,7 @@ export default function HomeScreen() {
                         label="목록 수정"
                         variant="outline"
                         size="sm"
-                        onPress={() =>
-                          router.push({
-                            pathname: '/create-list',
-                            params: { id: list.id },
-                          })
-                        }
+                        onPress={() => flow.openEditList(list.id)}
                         style={styles.footerBtn}
                       />
                       <Button

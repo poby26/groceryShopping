@@ -1,3 +1,9 @@
+/**
+ * @file shopping/[id].tsx
+ * @description '장보기 진행' 화면입니다.
+ * - 마트에서 이동하며 구매 품목을 체크하고, 체크 시 '구매 금액 확인 모달'을 통해 실제 판매가·할인가를 기록합니다.
+ * - 장보는 중 즉석 품목 추가('새 품목 입력 모달')와 결제 정산(자동 합산 + 수동 보정)을 지원합니다.
+ */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -9,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AddItemModal } from '../../components/shopping/AddItemModal';
 import { ItemPriceModal } from '../../components/shopping/ItemPriceModal';
@@ -17,6 +23,7 @@ import { AppHeader } from '../../components/ui/AppHeader';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { InputField } from '../../components/ui/InputField';
+import { useAppFlow } from '../../navigation/useAppFlow';
 import { useGroceryStore } from '../../store/useGroceryStore';
 import {
   radius,
@@ -42,20 +49,21 @@ import {
 } from '../../utils/format';
 
 export default function ActiveShoppingScreen() {
-  const router = useRouter();
+  const flow = useAppFlow();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const list = useGroceryStore((s) => s.lists.find((l) => l.id === id));
   const addItemToList = useGroceryStore((s) => s.addItemToList);
   const confirmItemPurchase = useGroceryStore((s) => s.confirmItemPurchase);
   const uncheckItem = useGroceryStore((s) => s.uncheckItem);
-  const completeShopping = useGroceryStore((s) => s.completeShopping);
 
+  // 모달 제어 상태
   const [priceModalItem, setPriceModalItem] = useState<ShoppingItem | null>(
     null
   );
   const [addModalOpen, setAddModalOpen] = useState(false);
 
+  // 현재까지 체크된 품목 개수 및 합산 금액 계산
   const summary = useMemo(
     () =>
       list
@@ -74,6 +82,7 @@ export default function ActiveShoppingScreen() {
     [list]
   );
 
+  // 결제 정산 입력값: 사용자가 직접 수정하기 전까지는 체크된 품목 합계와 자동 동기화
   const [manualOverride, setManualOverride] = useState(false);
   const [paidText, setPaidText] = useState(String(summary.checkedSubtotal));
   const [discountText, setDiscountText] = useState(
@@ -93,13 +102,13 @@ export default function ActiveShoppingScreen() {
         <AppHeader
           mode="task"
           title="장보기 진행"
-          onBack={() => router.back()}
+          onBack={flow.goBack}
         />
         <View style={styles.notFound}>
           <Text style={[typography.bodyLg, styles.mutedText]}>
             장보기 목록을 찾을 수 없어요.
           </Text>
-          <Button label="홈으로 돌아가기" onPress={() => router.replace('/')} />
+          <Button label="홈으로 돌아가기" onPress={flow.recoverToHome} />
         </View>
       </SafeAreaView>
     );
@@ -108,6 +117,7 @@ export default function ActiveShoppingScreen() {
   const finalPaidNum = parseNumericInput(paidText);
   const finalDiscountNum = parseNumericInput(discountText);
 
+  /** 체크박스 탭 시: 이미 체크되어 있으면 해제하고, 미체크 상태면 구매 금액 확인 모달을 엽니다. */
   const handleCheckboxPress = (item: ShoppingItem) => {
     if (item.checked) {
       uncheckItem(list.id, item.id);
@@ -116,16 +126,16 @@ export default function ActiveShoppingScreen() {
     }
   };
 
+  /** 장보기 완료 버튼 클릭 시 최종 금액 확인 후 이력에 저장합니다. */
   const handleConfirmComplete = () => {
     showConfirm(
       '장보기를 완료할까요?',
       `최종 결제금액 ${formatKRW(finalPaidNum)} (할인 ${formatKRW(finalDiscountNum)})으로 히스토리에 저장됩니다.`,
       () => {
-        completeShopping(list.id, {
+        flow.completeShoppingFlow(list.id, {
           actualPaidTotal: finalPaidNum,
           actualDiscountTotal: finalDiscountNum,
         });
-        router.replace(`/history/${list.id}`);
       },
       '완료 및 저장'
     );
@@ -139,7 +149,7 @@ export default function ActiveShoppingScreen() {
         subtitle={`${summary.totalCount}개 중 ${summary.checkedCount}개 담음`}
         badgeLabel="장보는 중"
         badgeTone="secondary"
-        onBack={() => router.back()}
+        onBack={flow.goBack}
       />
 
       <KeyboardAvoidingView
@@ -152,7 +162,7 @@ export default function ActiveShoppingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Add Item Trigger */}
+          {/* 장보는 중 즉석 품목 추가 버튼 */}
           <Button
             label="품목 추가"
             icon="add"
@@ -161,7 +171,7 @@ export default function ActiveShoppingScreen() {
             onPress={() => setAddModalOpen(true)}
           />
 
-          {/* Checklist Section */}
+          {/* 구매 품목 체크리스트 섹션 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -218,6 +228,7 @@ export default function ActiveShoppingScreen() {
                       </View>
                     </Pressable>
 
+                    {/* 품목명/금액 영역을 탭하면 언제든 구매 금액 확인 모달에서 가격 수정 가능 */}
                     <Pressable
                       onPress={() => setPriceModalItem(item)}
                       style={styles.checkContent}
@@ -266,7 +277,7 @@ export default function ActiveShoppingScreen() {
             </Card>
           </View>
 
-          {/* Settlement Section */}
+          {/* 결제 정산 기록 섹션 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[typography.titleLg, styles.sectionTitle]}>
@@ -317,7 +328,7 @@ export default function ActiveShoppingScreen() {
           </View>
         </ScrollView>
 
-        {/* Bottom Complete Bar */}
+        {/* 하단 고정 완료 정산 바 */}
         <View style={styles.bottomBar}>
           <View style={styles.bottomSummary}>
             <View style={styles.bottomMetaRow}>
@@ -344,7 +355,7 @@ export default function ActiveShoppingScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Modals */}
+      {/* 구매 금액 확인 모달 */}
       <ItemPriceModal
         visible={priceModalItem !== null}
         item={priceModalItem}
@@ -357,6 +368,7 @@ export default function ActiveShoppingScreen() {
         }}
       />
 
+      {/* 장보는 중 새 품목 추가 모달 */}
       <AddItemModal
         visible={addModalOpen}
         onClose={() => setAddModalOpen(false)}

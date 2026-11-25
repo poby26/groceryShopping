@@ -1,3 +1,8 @@
+/**
+ * @file ItemPriceModal.tsx
+ * @description 장보기 진행 화면에서 품목을 체크하거나 가격을 탭할 때 열리는 '구매 금액 확인' 모달입니다.
+ * 실제 판매금액과 할인금액을 수정하면 최종 구매금액이 자동으로 재계산되며, 최종 금액을 직접 덮어쓸 수도 있습니다.
+ */
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -29,6 +34,7 @@ import { formatKRW, parseNumericInput } from '../../utils/format';
 
 interface ItemPriceModalProps {
   visible: boolean;
+  /** 금액을 확인/수정할 대상 품목 (null이면 모달 비활성) */
   item: ShoppingItem | null;
   onClose: () => void;
   onConfirm: (payload: {
@@ -48,6 +54,7 @@ export function ItemPriceModal({
   const [discountText, setDiscountText] = useState('');
   const [finalText, setFinalText] = useState('');
 
+  // 모달이 열릴 때마다 해당 품목의 기존 실구매가 또는 예상 금액으로 입력값 초기화
   useEffect(() => {
     if (visible && item) {
       const sale = getItemSalePrice(item);
@@ -59,6 +66,7 @@ export function ItemPriceModal({
     }
   }, [visible, item]);
 
+  // 실제 판매금액 변경 시: 판매금액 - 할인금액으로 최종 구매금액 자동 갱신
   const handleSaleChange = (text: string) => {
     setSaleText(text);
     const sale = parseNumericInput(text);
@@ -66,6 +74,7 @@ export function ItemPriceModal({
     setFinalText(String(Math.max(0, sale - discount)));
   };
 
+  // 할인금액 변경 시: 판매금액 - 할인금액으로 최종 구매금액 자동 갱신
   const handleDiscountChange = (text: string) => {
     setDiscountText(text);
     const sale = parseNumericInput(saleText);

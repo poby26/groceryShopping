@@ -1,3 +1,8 @@
+/**
+ * @file Button.tsx
+ * @description Stitch 디자인 시스템의 버튼 변형(Primary, Secondary, Outline, Subtle)을 구현한 공통 버튼 컴포넌트입니다.
+ * 한 손 조작성을 위해 기본 높이 최소 44px(sm: 40px) 터치 영역을 보장합니다.
+ */
 import React from 'react';
 import {
   Pressable,
@@ -9,14 +14,19 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { radius, spacing, theme, typography } from '../../theme/tokens';
 
+/** 버튼 시각적 위계 변형 */
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'subtle';
 
 interface ButtonProps {
+  /** 버튼에 표시할 텍스트 */
   label: string;
+  /** 클릭/터치 시 실행할 핸들러 */
   onPress: () => void;
   variant?: ButtonVariant;
+  /** 좌측에 표시할 MaterialIcons 아이콘 이름 */
   icon?: keyof typeof MaterialIcons.glyphMap;
   disabled?: boolean;
+  /** true일 경우 부모 너비에 맞게 100% 확장 */
   fullWidth?: boolean;
   size?: 'md' | 'sm';
   style?: ViewStyle;
@@ -34,6 +44,7 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
+  // 버튼 배경 대비에 맞춰 아이콘 색상 결정
   const iconColor =
     variant === 'primary'
       ? theme.onSecondary

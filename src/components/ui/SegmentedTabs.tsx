@@ -1,7 +1,13 @@
+/**
+ * @file SegmentedTabs.tsx
+ * @description 홈(주간/월간/연간) 및 히스토리(전체/주간/월간/연간) 화면에서 기간 필터를 전환하는
+ * 공통 세그먼트 탭 컴포넌트입니다.
+ */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { radius, spacing, theme, typography } from '../../theme/tokens';
 
+/** 세그먼트 탭의 개별 항목 정의 */
 export interface TabOption<T extends string> {
   key: T;
   label: string;

@@ -1,3 +1,8 @@
+/**
+ * @file AddItemModal.tsx
+ * @description 장보기 진행 중 현장에서 목록에 없던 품목을 즉시 추가할 때 사용하는 모달입니다.
+ * 품목명, 예상 단가, 수량 스테퍼를 입력받아 현재 장보기 목록에 추가합니다.
+ */
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -35,6 +40,7 @@ export function AddItemModal({ visible, onClose, onAdd }: AddItemModalProps) {
   const [priceText, setPriceText] = useState('');
   const [quantity, setQuantity] = useState(1);
 
+  // 모달이 새로 열릴 때마다 입력 폼 초기화
   useEffect(() => {
     if (visible) {
       setName('');

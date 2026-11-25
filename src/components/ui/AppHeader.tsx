@@ -1,3 +1,9 @@
+/**
+ * @file AppHeader.tsx
+ * @description 화면 유형에 따라 두 가지 모드를 제공하는 공통 상단 헤더 컴포넌트입니다.
+ * - `brand` 모드: 최상위 탭 화면(홈, 히스토리)용 브랜드 아이콘 + 제목 + 오늘 날짜 표시
+ * - `task` 모드: 작업 흐름 화면(작성, 장보기 진행, 상세)용 뒤로가기 버튼 + 제목/부제목 + 상태 배지
+ */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';

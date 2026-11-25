@@ -1,11 +1,17 @@
+/**
+ * @file history/[id].tsx
+ * @description '장보기 상세' 영수증 화면입니다.
+ * 완료된 장보기의 예상 금액·할인 금액·최종 결제금액 요약과 구매 완료/미구매 품목 내역을 표시합니다.
+ */
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppHeader } from '../../components/ui/AppHeader';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { useAppFlow } from '../../navigation/useAppFlow';
 import { useGroceryStore } from '../../store/useGroceryStore';
 import {
   radius,
@@ -28,7 +34,7 @@ import {
 } from '../../utils/format';
 
 export default function HistoryDetailScreen() {
-  const router = useRouter();
+  const flow = useAppFlow();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const list = useGroceryStore((s) => s.lists.find((l) => l.id === id));
@@ -39,7 +45,7 @@ export default function HistoryDetailScreen() {
         <AppHeader
           mode="task"
           title="장보기 상세"
-          onBack={() => router.back()}
+          onBack={flow.goBack}
         />
         <View style={styles.notFound}>
           <Text style={[typography.bodyLg, styles.mutedText]}>
@@ -47,7 +53,7 @@ export default function HistoryDetailScreen() {
           </Text>
           <Button
             label="히스토리로 돌아가기"
-            onPress={() => router.replace('/(tabs)/history')}
+            onPress={flow.recoverToHistory}
           />
         </View>
       </SafeAreaView>
@@ -66,7 +72,7 @@ export default function HistoryDetailScreen() {
         title="장보기 상세"
         badgeLabel="완료"
         badgeTone="primary"
-        onBack={() => router.back()}
+        onBack={flow.goBack}
       />
 
       <ScrollView
@@ -74,7 +80,7 @@ export default function HistoryDetailScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Receipt Summary Card */}
+        {/* 영수증 요약 카드 */}
         <Card style={styles.receiptCard}>
           <View style={styles.receiptHeader}>
             <View style={styles.receiptTitleWrap}>
@@ -128,7 +134,7 @@ export default function HistoryDetailScreen() {
           </View>
         </Card>
 
-        {/* Purchased Items Breakdown */}
+        {/* 구매 품목 및 미구매 품목 상세 내역 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.titleLg, styles.titleText]}>

@@ -72,10 +72,14 @@ groceryShopping/
 ├── docs/
 │   └── PROGRESS.md                  # 프로젝트 진행 내역 및 핸드오프 문서
 └── src/
+    ├── navigation/                  # 프로그램 흐름 및 탭·라우트 중앙 관리
+    │   ├── routes.ts                # 라우트 경로 상수 및 탭 메뉴 메타데이터
+    │   └── useAppFlow.ts            # 화면 전환·탭 이동·장보기 흐름 제어 훅
     ├── app/                         # Expo Router 화면 라우트
+    │   ├── index.tsx                # 루트('/') 진입 → 메인 탭 홈 리다이렉트
     │   ├── _layout.tsx              # 루트 레이아웃 (폰트 로드, Stack 네비게이터)
-    │   ├── (tabs)/
-    │   │   ├── _layout.tsx          # 하단 탭 네비게이션 (홈 / 히스토리)
+    │   ├── tabs/
+    │   │   ├── _layout.tsx          # 하단 탭 네비게이션 (routes.ts 기반 구성)
     │   │   ├── index.tsx            # 홈 화면
     │   │   └── history.tsx          # 장보기 이력 화면
     │   ├── create-list.tsx          # 장보기 목록 작성 / 수정 화면

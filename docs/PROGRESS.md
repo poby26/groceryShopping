@@ -14,10 +14,10 @@
   - **Project ID**: `projects/1286837208810951354`
   - **디자인 시스템**: `오늘장보기 - Design System` (`assets/canvas_node_node_16672908794440105585`)
   - **화면 매핑 (총 5개 화면)**:
-    1. `홈 - 오늘장보기` (`node_15236273331104572632`) → `src/app/(tabs)/index.tsx`
+    1. `홈 - 오늘장보기` (`node_15236273331104572632`) → `src/app/tabs/index.tsx`
     2. `장보기 목록 작성` (`node_12967649652847261007`) → `src/app/create-list.tsx`
     3. `장보기 진행` (`node_8595984325034494641`) → `src/app/shopping/[id].tsx`
-    4. `장보기 이력` (`node_11714906081935503311`) → `src/app/(tabs)/history.tsx`
+    4. `장보기 이력` (`node_11714906081935503311`) → `src/app/tabs/history.tsx`
     5. `장보기 상세` (`node_1249847352511554731`) → `src/app/history/[id].tsx`
 
 ---
@@ -51,6 +51,7 @@
 - [x] 격리된 초기 샘플 데이터(`src/data/seedData.ts`) 적용
 - [x] 5개 핵심 화면 + 2개 모달(`ItemPriceModal`, `AddItemModal`) 구현 완료
 - [x] 웹 실행 지원 패키지(`react-native-web`, `react-dom`) 설치 및 웹 호환 알림 처리
+- [x] 메인 흐름 및 탭 이동 중앙 관리 모듈(`src/navigation/routes.ts`, `src/navigation/useAppFlow.ts`) 분리 및 `(tabs)` → `tabs` 구조 변경
 - [x] 검증 완료:
   - `npx tsc --noEmit` (타입 에러 0건)
   - 정산·기간별 집계·포맷팅 단위 로직 검증 통과

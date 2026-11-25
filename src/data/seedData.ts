@@ -1,18 +1,19 @@
 /**
- * ============================================================================
- * [개발 확인용 샘플 데이터 모듈]
+ * @file seedData.ts
+ * @description 초기 개발 및 UI 동작 확인용 샘플 데이터를 제공합니다.
  *
- * 나중에 샘플 데이터를 완전히 제거하려면:
- *   방법 1) 아래 `ENABLE_SEED_DATA`를 `false`로 변경
- *   방법 2) 이 파일(`src/data/seedData.ts`)을 삭제하고,
- *           `src/store/useGroceryStore.ts`에서 `getInitialSeedLists` import를 제거 후
- *           초기 `lists`를 `[]`로 설정
- * ============================================================================
+ * [샘플 데이터 완전 제거 방법]
+ *   - 방법 1) 아래 `ENABLE_SEED_DATA` 상수를 `false`로 변경
+ *   - 방법 2) 이 파일(`src/data/seedData.ts`)을 삭제한 뒤,
+ *             `src/store/useGroceryStore.ts`에서 `getInitialSeedLists` import를 제거하고
+ *             초기 `lists` 상태를 `[]`로 설정
  */
 import type { ShoppingList } from '../types/grocery';
 
+/** 샘플 데이터 활성화 여부 플래그 (배포 전 false로 변경 또는 파일 삭제) */
 export const ENABLE_SEED_DATA = true;
 
+/** 현재 시각 기준으로 N일 전의 ISO 타임스탬프를 생성합니다. */
 function daysAgoIso(daysAgo: number, hour = 16, minute = 20): string {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
@@ -20,6 +21,7 @@ function daysAgoIso(daysAgo: number, hour = 16, minute = 20): string {
   return d.toISOString();
 }
 
+/** 지난달 특정 일자의 ISO 타임스탬프를 생성합니다 (전월 대비 지출 비교 확인용). */
 function lastMonthIso(day: number, hour = 15, minute = 10): string {
   const d = new Date();
   d.setMonth(d.getMonth() - 1);
@@ -28,11 +30,15 @@ function lastMonthIso(day: number, hour = 15, minute = 10): string {
   return d.toISOString();
 }
 
+/**
+ * 스토어 최초 초기화 시 사용할 샘플 장보기 목록을 반환합니다.
+ * AsyncStorage에 이미 저장된 데이터가 있으면 Zustand persist가 저장된 값을 우선 복원합니다.
+ */
 export function getInitialSeedLists(): ShoppingList[] {
   if (!ENABLE_SEED_DATA) return [];
 
   return [
-    // 예정된 장보기 1 (준비됨)
+    // 예정된 장보기 1 (준비됨: 일부 품목이 미리 체크된 장보기 진행 테스트용)
     {
       id: 'seed-plan-1',
       title: '주말 트레이더스 장보기',
@@ -131,7 +137,7 @@ export function getInitialSeedLists(): ShoppingList[] {
         },
       ],
     },
-    // 완료된 이력 1 (이번 주)
+    // 완료된 이력 1 (이번 주, 미구매 품목 1건 포함)
     {
       id: 'seed-hist-1',
       title: '이마트 성수점',
