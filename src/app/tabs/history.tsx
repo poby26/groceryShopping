@@ -1,25 +1,20 @@
 /**
  * @file tabs/history.tsx
  * @description '장보기 이력' 화면입니다.
- * 전체 / 주간 / 월간 / 연간 필터 탭(`SegmentedTabs`)에 따라 완료된 장보기의 요약 지표와
- * 상세 이력 목록(연간 탭의 경우 올해 월별 집계 카드)을 표시합니다.
+ * 전체 / 주간 / 월간 / 연간 필터 탭에 따라 완료된 장보기 요약과 목록(연간 탭은 월별 집계)을 보여줍니다.
  */
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppHeader } from '../../components/ui/AppHeader';
 import { Card } from '../../components/ui/Card';
+import { ScreenLayout } from '../../components/ui/ScreenLayout';
+import { SectionHeader } from '../../components/ui/SectionHeader';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
+import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useAppFlow } from '../../navigation/useAppFlow';
 import { useGroceryStore } from '../../store/useGroceryStore';
-import {
-  radius,
-  spacing,
-  tabularNums,
-  theme,
-  typography,
-} from '../../theme/tokens';
+import { commonStyles } from '../../theme/commonStyles';
+import { radius, spacing, tabularNums, theme, typography } from '../../theme/tokens';
 import { HistoryFilter, ShoppingList } from '../../types/grocery';
 import {
   computePeriodSummary,
@@ -35,7 +30,6 @@ import {
   formatKoreanDateShort,
 } from '../../utils/format';
 
-/** 상단 이력 필터 세그먼트 탭 옵션 */
 const FILTER_OPTIONS: { key: HistoryFilter; label: string }[] = [
   { key: 'all', label: '전체' },
   { key: 'weekly', label: '주간' },
@@ -43,19 +37,12 @@ const FILTER_OPTIONS: { key: HistoryFilter; label: string }[] = [
   { key: 'yearly', label: '연간' },
 ];
 
-/**
- * 장보기 이력 탭 화면 컴포넌트
- */
 export default function HistoryScreen() {
   const flow = useAppFlow();
   const lists = useGroceryStore((s) => s.lists);
-
-  // 현재 선택된 기간 필터 (기본값: 'all')
   const [filter, setFilter] = useState<HistoryFilter>('all');
-  // 헤더 날짜 및 기간/연도 집계 기준 시점
   const now = useMemo(() => new Date(), []);
 
-  // '전체' 탭의 기간별 비교 카드 및 '주간'/'월간'/'연간' 탭의 3열 KPI 카드용 통계 계산
   const weeklySummary = useMemo(
     () => computePeriodSummary(lists, 'weekly', now),
     [lists, now]
@@ -69,26 +56,20 @@ export default function HistoryScreen() {
     [lists, now]
   );
 
-  // 선택된 필터('all' | 'weekly' | 'monthly' | 'yearly')에 해당하는 완료 이력 목록 (최신순)
   const filteredCompleted = useMemo(
     () => filterCompletedListsByPeriod(lists, filter, now),
     [lists, filter, now]
   );
 
-  // '연간' 탭에서 사용하는 올해 월별(1월~12월) 집계 목록
   const monthlyGroups = useMemo(
     () => groupCompletedListsByMonth(lists, now.getFullYear()),
     [lists, now]
   );
 
-  /**
-   * 완료된 개별 장보기 1건 카드를 렌더링합니다.
-   * 카드를 탭하면 해당 장보기의 영수증 상세 화면(`history/[id]`)으로 이동합니다.
-   */
+  /** 완료된 장보기 1건 카드 (탭 시 영수증 상세 화면으로 이동) */
   const renderHistoryItemCard = (item: ShoppingList) => {
     const paid = getListFinalPaid(item);
     const discount = getListFinalDiscount(item);
-    // 완료 시각이 있으면 우선 사용하고, 없으면 마지막 수정 시각으로 대체
     const dateIso = item.completedAt ?? item.updatedAt;
 
     return (
@@ -100,25 +81,35 @@ export default function HistoryScreen() {
           pressed && styles.historyCardPressed,
         ]}
       >
-        {/* 좌측: 장보기 제목 및 날짜·품목 수 메타 정보 */}
         <View style={styles.historyLeft}>
-          <Text style={[typography.titleMd, styles.cardTitle]} numberOfLines={1}>
+          <Text
+            style={[typography.titleMd, commonStyles.textOnSurface]}
+            numberOfLines={1}
+          >
             {item.title}
           </Text>
-          <Text style={[typography.bodyMd, tabularNums, styles.cardMeta]}>
+          <Text style={[typography.bodyMd, tabularNums, commonStyles.textMuted]}>
             {formatDotDate(dateIso)} · {item.items.length}개 품목
           </Text>
         </View>
-
-        {/* 우측: 최종 결제 금액, 할인 금액(0원 초과 시) 및 상세 이동 화살표 */}
         <View style={styles.historyRight}>
           <View style={styles.amountCol}>
-            <Text style={[typography.titleMd, tabularNums, styles.cardTitle]}>
+            <Text
+              style={[
+                typography.titleMd,
+                tabularNums,
+                commonStyles.textOnSurface,
+              ]}
+            >
               {formatKRW(paid)}
             </Text>
             {discount > 0 ? (
               <Text
-                style={[typography.labelSm, tabularNums, styles.discountText]}
+                style={[
+                  typography.labelSm,
+                  tabularNums,
+                  commonStyles.textSecondary,
+                ]}
               >
                 할인 {formatDiscountKRW(discount)}
               </Text>
@@ -130,238 +121,160 @@ export default function HistoryScreen() {
     );
   };
 
+  // 주간/월간/연간 탭에서 공용으로 사용하는 3열 KPI 요약 카드 렌더링
+  const activeStats =
+    filter === 'weekly'
+      ? weeklySummary
+      : filter === 'monthly'
+        ? monthlySummary
+        : yearlySummary;
+
+  const kpiLabel =
+    filter === 'weekly'
+      ? '이번 주 지출'
+      : filter === 'monthly'
+        ? `${now.getMonth() + 1}월 지출`
+        : `${now.getFullYear()}년 지출`;
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* 최상단 브랜드 헤더 */}
-      <AppHeader
-        mode="brand"
-        title="장보기 이력"
-        dateLabel={formatKoreanDateShort(now)}
+    <ScreenLayout
+      header={{
+        mode: 'brand',
+        title: '장보기 이력',
+        dateLabel: formatKoreanDateShort(now),
+      }}
+    >
+      <SegmentedTabs
+        options={FILTER_OPTIONS}
+        value={filter}
+        onChange={setFilter}
       />
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* 기간 필터 세그먼트 탭 (전체 / 주간 / 월간 / 연간) */}
-        <SegmentedTabs
-          options={FILTER_OPTIONS}
-          value={filter}
-          onChange={setFilter}
-        />
-
-        {/* 1) '전체' 탭: 주간·월간·연간 비교 요약 카드 + 전체 완료 이력 리스트 */}
-        {filter === 'all' ? (
-          <>
-            <Card style={styles.allSummaryCard}>
-              <View style={styles.summaryHeader}>
-                <Text style={[typography.titleMd, styles.cardTitle]}>
-                  기간별 장보기 요약
-                </Text>
-                <Text style={[typography.labelSm, styles.cardMeta]}>
-                  횟수 · 결제금액
-                </Text>
-              </View>
-              <View style={styles.periodRows}>
-                {[
-                  { label: '주간', stats: weeklySummary },
-                  { label: '월간', stats: monthlySummary },
-                  { label: '연간', stats: yearlySummary },
-                ].map((row, idx) => (
-                  <View
-                    key={row.label}
+      {filter === 'all' ? (
+        <>
+          <Card style={styles.summaryCard}>
+            <SectionHeader title="기간별 장보기 요약" rightText="횟수 · 결제금액" />
+            <View>
+              {[
+                { label: '주간', stats: weeklySummary },
+                { label: '월간', stats: monthlySummary },
+                { label: '연간', stats: yearlySummary },
+              ].map((row, idx) => (
+                <View
+                  key={row.label}
+                  style={[styles.periodRow, idx > 0 && commonStyles.rowBorder]}
+                >
+                  <View style={styles.periodRowLeft}>
+                    <Text style={[typography.labelLg, commonStyles.textOnSurface]}>
+                      {row.label}
+                    </Text>
+                    <StatusBadge
+                      label={`${row.stats.tripCount}회`}
+                      tone="primary"
+                      compact
+                    />
+                  </View>
+                  <Text
                     style={[
-                      styles.periodRow,
-                      idx > 0 && styles.periodRowBorder,
+                      typography.titleMd,
+                      tabularNums,
+                      commonStyles.textOnSurface,
                     ]}
                   >
-                    <View style={styles.periodRowLeft}>
-                      <Text style={[typography.labelLg, styles.cardTitle]}>
-                        {row.label}
-                      </Text>
-                      <View style={styles.smallPill}>
-                        <Text
-                          style={[
-                            typography.labelSm,
-                            tabularNums,
-                            styles.smallPillText,
-                          ]}
-                        >
-                          {row.stats.tripCount}회
-                        </Text>
-                      </View>
-                    </View>
-                    <Text
-                      style={[typography.titleMd, tabularNums, styles.cardTitle]}
-                    >
-                      {formatKRW(row.stats.totalSpent)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </Card>
-
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[typography.titleLg, styles.sectionTitle]}>
-                  전체 장보기 목록
-                </Text>
-                <Text style={[typography.labelSm, tabularNums, styles.cardMeta]}>
-                  {filteredCompleted.length}건
-                </Text>
-              </View>
-
-              {filteredCompleted.length === 0 ? (
-                <Card style={styles.emptyCard}>
-                  <Text style={[typography.bodyMd, styles.cardMeta]}>
-                    아직 완료된 장보기 기록이 없어요.
+                    {formatKRW(row.stats.totalSpent)}
                   </Text>
-                </Card>
-              ) : (
-                <View style={styles.listStack}>
-                  {filteredCompleted.map(renderHistoryItemCard)}
                 </View>
-              )}
+              ))}
             </View>
-          </>
-        ) : null}
+          </Card>
 
-        {/* 2) '주간' / '월간' 탭: 3열 KPI 요약 카드(지출·총 할인·완료 횟수) + 기간 내 완료 이력 */}
-        {filter === 'weekly' || filter === 'monthly' ? (
-          <>
-            <Card style={styles.kpiRowCard}>
-              <View style={styles.kpiItem}>
-                <Text style={[typography.labelSm, styles.cardMeta]}>
-                  {filter === 'weekly'
-                    ? '이번 주 지출'
-                    : `${now.getMonth() + 1}월 지출`}
+          <View style={commonStyles.section}>
+            <SectionHeader
+              title="전체 장보기 목록"
+              rightText={`${filteredCompleted.length}건`}
+            />
+            {filteredCompleted.length === 0 ? (
+              <Card style={commonStyles.emptyCard}>
+                <Text style={[typography.bodyMd, commonStyles.textMuted]}>
+                  아직 완료된 장보기 기록이 없어요.
                 </Text>
-                <Text
-                  style={[typography.titleMd, tabularNums, styles.cardTitle]}
-                >
-                  {formatKRW(
-                    filter === 'weekly'
-                      ? weeklySummary.totalSpent
-                      : monthlySummary.totalSpent
-                  )}
-                </Text>
+              </Card>
+            ) : (
+              <View style={styles.listStack}>
+                {filteredCompleted.map(renderHistoryItemCard)}
               </View>
-              <View style={styles.kpiDivider} />
-              <View style={styles.kpiItem}>
-                <Text style={[typography.labelSm, styles.cardMeta]}>
-                  총 할인
-                </Text>
-                <Text
-                  style={[
-                    typography.titleMd,
-                    tabularNums,
-                    styles.discountText,
-                  ]}
-                >
-                  {formatKRW(
-                    filter === 'weekly'
-                      ? weeklySummary.totalDiscount
-                      : monthlySummary.totalDiscount
-                  )}
-                </Text>
-              </View>
-              <View style={styles.kpiDivider} />
-              <View style={styles.kpiItem}>
-                <Text style={[typography.labelSm, styles.cardMeta]}>
-                  완료 횟수
-                </Text>
-                <Text
-                  style={[typography.titleMd, tabularNums, styles.primaryText]}
-                >
-                  {filter === 'weekly'
-                    ? weeklySummary.tripCount
-                    : monthlySummary.tripCount}
-                  회
-                </Text>
-              </View>
-            </Card>
-
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[typography.titleLg, styles.sectionTitle]}>
-                  {filter === 'weekly' ? '주간 장보기 목록' : '월간 장보기 목록'}
-                </Text>
-                <Text style={[typography.labelSm, tabularNums, styles.cardMeta]}>
-                  {filteredCompleted.length}건
-                </Text>
-              </View>
-
-              {filteredCompleted.length === 0 ? (
-                <Card style={styles.emptyCard}>
-                  <Text style={[typography.bodyMd, styles.cardMeta]}>
-                    해당 기간의 완료된 장보기 기록이 없어요.
-                  </Text>
-                </Card>
-              ) : (
-                <View style={styles.listStack}>
-                  {filteredCompleted.map(renderHistoryItemCard)}
-                </View>
-              )}
+            )}
+          </View>
+        </>
+      ) : (
+        <>
+          <Card style={styles.kpiRowCard}>
+            <View style={styles.kpiItem}>
+              <Text style={[typography.labelSm, commonStyles.textMuted]}>
+                {kpiLabel}
+              </Text>
+              <Text
+                style={[
+                  typography.titleMd,
+                  tabularNums,
+                  commonStyles.textOnSurface,
+                ]}
+              >
+                {formatKRW(activeStats.totalSpent)}
+              </Text>
             </View>
-          </>
-        ) : null}
+            <View style={styles.kpiDivider} />
+            <View style={styles.kpiItem}>
+              <Text style={[typography.labelSm, commonStyles.textMuted]}>
+                총 할인
+              </Text>
+              <Text
+                style={[
+                  typography.titleMd,
+                  tabularNums,
+                  commonStyles.textSecondary,
+                ]}
+              >
+                {formatKRW(activeStats.totalDiscount)}
+              </Text>
+            </View>
+            <View style={styles.kpiDivider} />
+            <View style={styles.kpiItem}>
+              <Text style={[typography.labelSm, commonStyles.textMuted]}>
+                완료 횟수
+              </Text>
+              <Text
+                style={[
+                  typography.titleMd,
+                  tabularNums,
+                  commonStyles.textPrimary,
+                ]}
+              >
+                {activeStats.tripCount}회
+              </Text>
+            </View>
+          </Card>
 
-        {/* 3) '연간' 탭: 올해 누적 KPI 카드 + 월별 집계 목록 (탭 시 해당 월 최신 장보기 상세로 이동) */}
-        {filter === 'yearly' ? (
-          <>
-            <Card style={styles.kpiRowCard}>
-              <View style={styles.kpiItem}>
-                <Text style={[typography.labelSm, styles.cardMeta]}>
-                  {now.getFullYear()}년 지출
-                </Text>
-                <Text
-                  style={[typography.titleMd, tabularNums, styles.cardTitle]}
-                >
-                  {formatKRW(yearlySummary.totalSpent)}
-                </Text>
-              </View>
-              <View style={styles.kpiDivider} />
-              <View style={styles.kpiItem}>
-                <Text style={[typography.labelSm, styles.cardMeta]}>
-                  총 할인
-                </Text>
-                <Text
-                  style={[
-                    typography.titleMd,
-                    tabularNums,
-                    styles.discountText,
-                  ]}
-                >
-                  {formatKRW(yearlySummary.totalDiscount)}
-                </Text>
-              </View>
-              <View style={styles.kpiDivider} />
-              <View style={styles.kpiItem}>
-                <Text style={[typography.labelSm, styles.cardMeta]}>
-                  완료 횟수
-                </Text>
-                <Text
-                  style={[typography.titleMd, tabularNums, styles.primaryText]}
-                >
-                  {yearlySummary.tripCount}회
-                </Text>
-              </View>
-            </Card>
+          <View style={commonStyles.section}>
+            <SectionHeader
+              title={
+                filter === 'weekly'
+                  ? '주간 장보기 목록'
+                  : filter === 'monthly'
+                    ? '월간 장보기 목록'
+                    : '연간 장보기 목록'
+              }
+              rightText={
+                filter === 'yearly'
+                  ? `${now.getFullYear()}년`
+                  : `${filteredCompleted.length}건`
+              }
+            />
 
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[typography.titleLg, styles.sectionTitle]}>
-                  연간 장보기 목록
-                </Text>
-                <Text style={[typography.labelSm, tabularNums, styles.cardMeta]}>
-                  {now.getFullYear()}년
-                </Text>
-              </View>
-
-              {monthlyGroups.length === 0 ? (
-                <Card style={styles.emptyCard}>
-                  <Text style={[typography.bodyMd, styles.cardMeta]}>
+            {filter === 'yearly' ? (
+              monthlyGroups.length === 0 ? (
+                <Card style={commonStyles.emptyCard}>
+                  <Text style={[typography.bodyMd, commonStyles.textMuted]}>
                     올해 완료된 장보기 기록이 없어요.
                   </Text>
                 </Card>
@@ -379,14 +292,16 @@ export default function HistoryScreen() {
                       ]}
                     >
                       <View style={styles.historyLeft}>
-                        <Text style={[typography.titleMd, styles.cardTitle]}>
+                        <Text
+                          style={[typography.titleMd, commonStyles.textOnSurface]}
+                        >
                           {group.label}
                         </Text>
                         <Text
                           style={[
                             typography.bodyMd,
                             tabularNums,
-                            styles.cardMeta,
+                            commonStyles.textMuted,
                           ]}
                         >
                           총 {group.tripCount}회 완료
@@ -398,7 +313,7 @@ export default function HistoryScreen() {
                             style={[
                               typography.titleMd,
                               tabularNums,
-                              styles.cardTitle,
+                              commonStyles.textOnSurface,
                             ]}
                           >
                             {formatKRW(group.totalSpent)}
@@ -408,7 +323,7 @@ export default function HistoryScreen() {
                               style={[
                                 typography.labelSm,
                                 tabularNums,
-                                styles.discountText,
+                                commonStyles.textSecondary,
                               ]}
                             >
                               할인 {formatDiscountKRW(group.totalDiscount)}
@@ -424,42 +339,28 @@ export default function HistoryScreen() {
                     </Pressable>
                   ))}
                 </View>
-              )}
-            </View>
-          </>
-        ) : null}
-      </ScrollView>
-    </SafeAreaView>
+              )
+            ) : filteredCompleted.length === 0 ? (
+              <Card style={commonStyles.emptyCard}>
+                <Text style={[typography.bodyMd, commonStyles.textMuted]}>
+                  해당 기간의 완료된 장보기 기록이 없어요.
+                </Text>
+              </Card>
+            ) : (
+              <View style={styles.listStack}>
+                {filteredCompleted.map(renderHistoryItemCard)}
+              </View>
+            )}
+          </View>
+        </>
+      )}
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  // --- 화면 레이아웃 ---
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.surface,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
-  },
-
-  // --- '전체' 탭 기간별 비교 카드 ---
-  allSummaryCard: {
+  summaryCard: {
     gap: spacing.md,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  periodRows: {
-    gap: 0,
   },
   periodRow: {
     flexDirection: 'row',
@@ -467,26 +368,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.sm + 2,
   },
-  periodRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: theme.outlineVariant,
-  },
   periodRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  smallPill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    backgroundColor: theme.surfaceContainerLow,
-  },
-  smallPillText: {
-    color: theme.primary,
-  },
-
-  // --- 3열 KPI 요약 카드 (주간/월간/연간) ---
   kpiRowCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -500,19 +386,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 36,
     backgroundColor: theme.outlineVariant,
-  },
-
-  // --- 이력 목록 섹션 및 개별 카드 ---
-  section: {
-    gap: spacing.sm + 4,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    color: theme.onSurface,
   },
   listStack: {
     gap: spacing.sm + 2,
@@ -543,23 +416,5 @@ const styles = StyleSheet.create({
   amountCol: {
     alignItems: 'flex-end',
     gap: 2,
-  },
-
-  // --- 텍스트 색상 및 빈 상태 ---
-  cardTitle: {
-    color: theme.onSurface,
-  },
-  cardMeta: {
-    color: theme.onSurfaceVariant,
-  },
-  discountText: {
-    color: theme.secondary,
-  },
-  primaryText: {
-    color: theme.primary,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
   },
 });

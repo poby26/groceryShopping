@@ -26,7 +26,7 @@ export const ROUTES = {
   TABS_GROUP: 'tabs',
   HOME: '/tabs',
   HISTORY: '/tabs/history',
-  CREATE_LIST: '/create-list',
+  CREATE_LIST: '/create',
   SHOPPING: '/shopping/[id]',
   HISTORY_DETAIL: '/history/[id]',
 } as const;

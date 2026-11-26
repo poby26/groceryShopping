@@ -82,7 +82,8 @@ groceryShopping/
     │   │   ├── _layout.tsx          # 하단 탭 네비게이션 (routes.ts 기반 구성)
     │   │   ├── index.tsx            # 홈 화면
     │   │   └── history.tsx          # 장보기 이력 화면
-    │   ├── create-list.tsx          # 장보기 목록 작성 / 수정 화면
+    │   ├── create/
+    │   │   └── index.tsx            # 장보기 목록 작성 / 수정 화면
     │   ├── shopping/[id].tsx        # 장보기 진행 화면
     │   └── history/[id].tsx         # 장보기 상세 화면
     ├── components/

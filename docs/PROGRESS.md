@@ -38,7 +38,8 @@
       │   │   ├── _layout.tsx              # TAB_ITEMS 기반 하단 탭 바 구성
       │   │   ├── index.tsx                # 홈 화면 (지출 요약, 새 장보기 작성, 예정 목록)
       │   │   └── history.tsx              # 장보기 이력 화면 (전체/주간/월간/연간 필터)
-      │   ├── create-list.tsx              # 장보기 목록 작성 / 수정 화면
+      │   ├── create/
+      │   │   └── index.tsx                # 장보기 목록 작성 / 수정 화면
       │   ├── shopping/[id].tsx            # 장보기 진행 화면 (체크리스트, 정산 기록)
       │   └── history/[id].tsx             # 장보기 상세 영수증 화면
       ├── components/
@@ -74,7 +75,7 @@
 | Stitch 화면명 | Screen ID | 앱 라우트 파일 | 주요 역할 |
 | :--- | :--- | :--- | :--- |
 | `홈 - 오늘장보기` | `node_15236273331104572632` | [`src/app/tabs/index.tsx`](file:///c:/dev/workspace/groceryShopping/src/app/tabs/index.tsx) | 주간/월간/연간 요약, 새 장보기 작성, 예정 목록 |
-| `장보기 목록 작성` | `node_12967649652847261007` | [`src/app/create-list.tsx`](file:///c:/dev/workspace/groceryShopping/src/app/create-list.tsx) | 장보기 이름, 품목 추가/삭제, 예상 총액 |
+| `장보기 목록 작성` | `node_12967649652847261007` | [`src/app/create/index.tsx`](file:///c:/dev/workspace/groceryShopping/src/app/create/index.tsx) | 장보기 이름, 품목 추가/삭제, 예상 총액 |
 | `장보기 진행` | `node_8595984325034494641` | [`src/app/shopping/[id].tsx`](file:///c:/dev/workspace/groceryShopping/src/app/shopping/[id].tsx) | 체크리스트, 실구매가/새 품목 모달, 결제 정산 |
 | `장보기 이력` | `node_11714906081935503311` | [`src/app/tabs/history.tsx`](file:///c:/dev/workspace/groceryShopping/src/app/tabs/history.tsx) | 전체/주간/월간/연간(월별) 완료 이력 조회 |
 | `장보기 상세` | `node_1249847352511554731` | [`src/app/history/[id].tsx`](file:///c:/dev/workspace/groceryShopping/src/app/history/[id].tsx) | 영수증 요약 및 구매/미구매 품목 상세 |
@@ -158,6 +159,11 @@
 - `src/app/`(8개 파일) 및 `src/components/`(7개 파일) 총 15개 소스 파일에 대해 코드 로직 변경 없이 한국어 상세 주석(Props 규격, 상태·파생 데이터 흐름, 핸들러·예외 분기, UI 섹션 및 스타일 그룹)을 보강했습니다. (`npx tsc --noEmit` 타입 오류 0건 확인)
 - 신규 PC 클론 환경에서 `package-lock.json` 기준 `npm ci`로 `expo@58.0.26` 포함 전체 의존성을 일치시켜 정상 동작을 검증했습니다.
 - 다중 GitHub 계정 환경에서 발생하던 push 권한 오류(`403`) 원인을 파악해 Windows 자격 증명 관리자(`github.com` → `poby26`)를 정비했습니다.
+
+### ✅ [10단계] 공통 스타일 및 반복 UI 컴포넌트 추출 리팩토링 완료
+- [`src/theme/commonStyles.ts`](file:///c:/dev/workspace/groceryShopping/src/theme/commonStyles.ts)에 화면 공통 레이아웃·구분선·텍스트 색상 스타일을 통합했습니다.
+- 반복되던 UI 패턴을 [`ScreenLayout.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/ScreenLayout.tsx), [`SectionHeader.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/SectionHeader.tsx), [`StatusBadge.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/StatusBadge.tsx), [`QuantityStepper.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/QuantityStepper.tsx), [`ModalSheet.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/ModalSheet.tsx) 5종 공통 컴포넌트로 분리했습니다.
+- 5개 화면 및 2개 모달에서 중복 `StyleSheet`와 보일러플레이트를 제거해 각 파일의 스타일 코드를 절반 이상 축소했습니다.
 
 ---
 
