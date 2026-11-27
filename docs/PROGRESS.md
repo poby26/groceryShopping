@@ -165,6 +165,9 @@
 - 반복되던 UI 패턴을 [`ScreenLayout.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/ScreenLayout.tsx), [`SectionHeader.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/SectionHeader.tsx), [`StatusBadge.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/StatusBadge.tsx), [`QuantityStepper.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/QuantityStepper.tsx), [`ModalSheet.tsx`](file:///c:/dev/workspace/groceryShopping/src/components/ui/ModalSheet.tsx) 5종 공통 컴포넌트로 분리했습니다.
 - 5개 화면 및 2개 모달에서 중복 `StyleSheet`와 보일러플레이트를 제거해 각 파일의 스타일 코드를 절반 이상 축소했습니다.
 
+### ✅ [11단계] 홈 화면 예정된 장보기 삭제 기능 구현 완료
+- [`src/app/tabs/index.tsx`](file:///c:/dev/workspace/groceryShopping/src/app/tabs/index.tsx)의 예정된 장보기 카드 상단에 삭제 아이콘 버튼(`delete-outline`)을 추가하고, [`showConfirm`](file:///c:/dev/workspace/groceryShopping/src/utils/alert.ts) 확인 다이얼로그 후 `deleteList`가 실행되도록 연결했습니다.
+
 ---
 
 ## 🚀 5. 앞으로 남은 작업 로드맵 (Upcoming Roadmap)
@@ -173,7 +176,7 @@
 
 ### 🎯 [1순위] 실사용 UI/UX 점검 및 목록·이력 관리 기능 보완
 - 웹(`npm run web`) 및 모바일(Expo Go) 실화면 테스트 결과에 따른 여백·폰트·인터랙션 디테일 조정
-- 예정된 장보기 목록 **삭제 기능** 추가 (현재 스토어 `deleteList` 액션은 구현되어 있으며 UI 버튼 연결 필요)
+- [x] 예정된 장보기 목록 **삭제 기능** UI 연결 (`src/app/tabs/index.tsx`)
 - 완료된 장보기 이력 **삭제** 또는 **"다시 장보기(목록 복제)"** 편의 기능 검토
 
 ### 🎯 [2순위] 샘플 데이터(`seedData.ts`) 완전 제거

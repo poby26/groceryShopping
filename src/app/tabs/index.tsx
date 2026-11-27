@@ -6,7 +6,8 @@
  * - 예정된/진행 중인 장보기 목록 카드 (목록 수정, 장보기 시작/이어하기)
  */
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ScreenLayout } from '../../components/ui/ScreenLayout';
@@ -16,8 +17,9 @@ import { BadgeTone, StatusBadge } from '../../components/ui/StatusBadge';
 import { useAppFlow } from '../../navigation/useAppFlow';
 import { useGroceryStore } from '../../store/useGroceryStore';
 import { commonStyles } from '../../theme/commonStyles';
-import { spacing, tabularNums, theme, typography } from '../../theme/tokens';
-import { ShoppingStatus, SummaryPeriod } from '../../types/grocery';
+import { radius, spacing, tabularNums, theme, typography } from '../../theme/tokens';
+import { ShoppingList, ShoppingStatus, SummaryPeriod } from '../../types/grocery';
+import { showConfirm } from '../../utils/alert';
 import {
   computePeriodSummary,
   getListEstimatedTotal,
@@ -53,9 +55,20 @@ function getStatusBadge(status: ShoppingStatus): {
 export default function HomeScreen() {
   const flow = useAppFlow();
   const lists = useGroceryStore((s) => s.lists);
+  const deleteList = useGroceryStore((s) => s.deleteList);
 
   const [period, setPeriod] = useState<SummaryPeriod>('weekly');
   const now = useMemo(() => new Date(), []);
+
+  /** 예정된 장보기 삭제 확인 후 스토어에서 제거 */
+  const handleDeleteList = (list: ShoppingList) => {
+    showConfirm(
+      '장보기 목록을 삭제할까요?',
+      `'${list.title}' 목록과 담은 품목이 모두 삭제됩니다.`,
+      () => deleteList(list.id),
+      '삭제'
+    );
+  };
 
   // 선택된 기간(주간/월간/연간)에 따른 지출·할인·평균 통계 계산
   const summary = useMemo(
@@ -246,7 +259,27 @@ export default function HomeScreen() {
                         {formatKRW(getListEstimatedTotal(list))}
                       </Text>
                     </View>
-                    <StatusBadge label={badge.label} tone={badge.tone} />
+                    <View style={styles.planHeaderActions}>
+                      <StatusBadge label={badge.label} tone={badge.tone} />
+                      <Pressable
+                        onPress={() => handleDeleteList(list)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${list.title} 삭제`}
+                        hitSlop={6}
+                        style={({ pressed }) => [
+                          styles.deleteBtn,
+                          pressed && styles.deleteBtnPressed,
+                        ]}
+                      >
+                        {({ pressed }) => (
+                          <MaterialIcons
+                            name="delete-outline"
+                            size={20}
+                            color={pressed ? theme.error : theme.outline}
+                          />
+                        )}
+                      </Pressable>
+                    </View>
                   </View>
 
                   <View style={[styles.planFooter, commonStyles.rowBorder]}>
@@ -256,6 +289,7 @@ export default function HomeScreen() {
                       size="sm"
                       onPress={() => flow.openEditList(list.id)}
                       style={commonStyles.flex1}
+                      disabled={list.status !== 'shopping' ? false : true}
                     />
                     <Button
                       label={
@@ -313,6 +347,21 @@ const styles = StyleSheet.create({
   planInfo: {
     flex: 1,
     gap: spacing.xs,
+  },
+  planHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtnPressed: {
+    backgroundColor: theme.errorContainer,
   },
   planFooter: {
     flexDirection: 'row',
